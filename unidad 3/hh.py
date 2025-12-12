@@ -1,8 +1,9 @@
 import oracledb
 import bcrypt
 import os
+import requests
 from dotenv import load_dotenv
-
+from typing import Optional
 load_dotenv()
 
 username=os.getenv("ORACLE_USER")
