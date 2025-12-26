@@ -51,17 +51,19 @@ class Database:
                 password VARCHAR2(128) NOT NULL
             )
             """,
+            
             """
-            CREATE TABLE indicator_log(
+            CREATE TABLE historial_consultas(
                 id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                indicator_name VARCHAR2(20) NOT NULL,
-                indicator_value NUMBER NOT NULL,
-                indicator_date DATE NOT NULL,
-                query_date DATE NOT NULL,
-                username VARCHAR2(50) NOT NULL,
-                source VARCHAR2(100) NOT NULL
+                usuario VARCHAR2(32) NOT NULL,
+                indicador VARCHAR2(20) NOT NULL,
+                valor NUMBER NOT NULL,
+                fecha_indicador DATE NOT NULL,
+                fecha_consulta DATE NOT NULL,
+                fuente VARCHAR2(100) NOT NULL
             )
             """
+
         ]
 
         for table in tables:
@@ -141,6 +143,32 @@ class Finance:
         except Exception:
             print("Hubo un error con la solicitud")
             return None
+
+    def guardar_consulta(self, db, usuario: str, indicador: str, datos: dict) -> dict:
+        """
+        Guarda la consulta en la tabla 'historial_consultas' que usa la UI Flet.
+        Espera que 'datos' tenga: valor (float), fuente (str), fecha_indicador (datetime.date)
+        """
+        try:
+            db.query(
+                sql="""
+                    INSERT INTO historial_consultas(
+                        usuario, indicador, valor, fecha_indicador, fecha_consulta, fuente
+                    )
+                    VALUES (:usr, :ind, :val, :f_ind, :f_cons, :src)
+                """,
+                parameters={
+                    "usr": usuario,
+                    "ind": indicador,
+                    "val": float(datos["valor"]),
+                    "f_ind": datos["fecha_indicador"],           
+                    "f_cons": datetime.date.today(),
+                    "src": datos["fuente"],
+                },
+            )
+            return {"success": True, "message": "Consulta guardada"}
+        except Exception as ex:
+            return {"success": False, "message": f"Error al guardar consulta: {ex}"}
 
     def consultar_y_opcionalmente_guardar(self, db: Database, username: str, indicador: str, fecha: Optional[str] = None):
         data = self._fetch_indicator(indicador, fecha)

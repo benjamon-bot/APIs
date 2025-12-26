@@ -114,7 +114,8 @@ class Aplicacion:
             width=300
         )
         self.input_fecha = ft.TextField(label="Fecha", read_only=True, width=200)
-        self.boton_fecha = ft.Button(content="Elegir fecha", on_click=lambda e: self.date_picker.pick_date())
+
+        self.boton_fecha = ft.ElevatedButton(content="Elegir fecha", icon=ft.Icons.CALENDAR_MONTH,on_click=lambda e: self.pagina.show_dialog(self.date_picker))
         self.boton_consultar = ft.Button(content="Consultar", on_click=self.consultar_indicador)
         self.boton_guardar = ft.Button(content="Guardar consulta", on_click=self.guardar_indicador, disabled=True)
         self.texto_estado_indicador = ft.Text(value="", color=ft.Colors.RED_400)
@@ -127,23 +128,48 @@ class Aplicacion:
             self.input_fecha.value = self.date_picker.value.strftime("%d-%m-%Y")
             self.pagina.update()
 
+    
     def consultar_indicador(self, e):
         indicador = (self.dropdown_indicador.value or "").strip()
         fecha = (self.input_fecha.value or "").strip()
-        datos = self.finanzas.obtener_indicador(indicador, fecha)
-        if not datos.get("success"):
-            self.texto_estado_indicador.value = datos.get("message", "Error")
+
+    # Validación básica: indicador y fecha requeridos
+        if not indicador or not fecha:
+            self.texto_estado_indicador.value = "Debe seleccionar indicador y fecha."
             self.texto_estado_indicador.color = ft.Colors.RED_400
             self.texto_resultado.value = ""
             self.boton_guardar.disabled = True
+            self.pagina.update()
+            return
+
+    # Llamada al método interno (privado) que ya estás usando
+        datos_raw = self.finanzas._fetch_indicator(indicador, fecha)
+
+        if not datos_raw:
+        # No hay datos o error al consultar
+            self.texto_estado_indicador.value = "No hay datos para la fecha seleccionada o error al consultar."
+            self.texto_estado_indicador.color = ft.Colors.RED_400
+            self.texto_resultado.value = ""
+            self.boton_guardar.disabled = True
+            self._ultimo_resultado = None
+            self._ultimo_indicador = None
         else:
+        # Mapear al formato que maneja la UI / guardado
+            datos = {
+                "valor": datos_raw["value"],
+                "fuente": datos_raw["source"],
+                "fecha_indicador": datos_raw["indicator_date"],  # datetime.date
+            }
+            self._ultimo_resultado = datos
+            self._ultimo_indicador = indicador
+
             self.texto_estado_indicador.value = "Consulta realizada"
             self.texto_estado_indicador.color = ft.Colors.GREEN_600
             self.texto_resultado.value = f"{indicador.upper()} {fecha}: {datos['valor']} (Fuente: {datos['fuente']})"
-            self._ultimo_resultado = datos
-            self._ultimo_indicador = indicador
             self.boton_guardar.disabled = False
+
         self.pagina.update()
+
 
     def guardar_indicador(self, e):
         if self._ultimo_resultado:
