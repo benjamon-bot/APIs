@@ -82,59 +82,38 @@ class Database:
             print("Error de base de datos:", error)
             return None
 
-class Auth:
+class Auth: 
+    @staticmethod 
+    def register(db: Database, username: str, password: str) -> dict: 
+        if not validar_username(username): 
+            return {"success": False, "message": "Usuario inválido. Debe ser alfanumérico (._-) y de 3 a 32 caracteres."} 
+        if not validar_password(password): 
+            return {"success": False, "message": "Contraseña inválida. Debe tener entre 8 y 128 caracteres con letras y números."} 
+        salt = bcrypt.gensalt(rounds=12) 
+        hash_password = bcrypt.hashpw(password.encode("UTF-8"), salt) 
+        hash_hex = hash_password.hex() 
+        try: 
+            db.query( sql="INSERT INTO USERS(username,password) VALUES (:username, :password)", parameters={"username": username, "password": hash_hex} ) 
+            
+            return {"success": True, "message": "Usuario registrado con éxito"} 
+        except Exception as e: 
+            return {"success": False, "message": f"No se pudo registrar el usuario: {e}"}
     @staticmethod
-    def register(db: Database, username: str, password: str) -> bool:
-        if not validar_username(username):
-            print("Usuario inválido. Debe ser alfanumérico (._-) y de 3 a 32 caracteres.")
-            return False
-        if not validar_password(password):
-            print("Contraseña inválida. Debe tener entre 8 y 128 caracteres con letras y números.")
-            return False
-
-        salt = bcrypt.gensalt(rounds=12)
-        hash_password = bcrypt.hashpw(password.encode("UTF-8"), salt)
-        hash_hex = hash_password.hex()
-
-        try:
-            db.query(
-                sql= "INSERT INTO USERS(username,password) VALUES (:username, :password)",
-                parameters={"username": username, "password": hash_hex}
-            )
-            print("Usuario registrado con éxito")
-            return True
-        except Exception as e:
-            print("No se pudo registrar el usuario:", e)
-            return False
-
-    @staticmethod
-    def login(db: Database, username: str, password: str) -> bool:
-        if not validar_username(username) or not validar_password(password):
-            print("Credenciales con formato inválido.")
-            return False
-
-        resultado = db.query(
-            sql= "SELECT id, username, password FROM USERS WHERE username = :username",
-            parameters={"username": username}
-        )
-        if not resultado:
-            print("No hay coincidencias")
-            return False
-       
-        # password almacenado como hex
-        hashed_hex = resultado[0][2]
-        try:
-            hashed_password = bytes.fromhex(hashed_hex)
-        except ValueError:
-            print("Formato de hash inválido en base de datos.")
-            return False
-
-        if bcrypt.checkpw(password.encode("UTF-8"), hashed_password):
-            print("Logeado correctamente")
-            return True
-        else:
-            print("Contraseña incorrecta")
-            return False
+    def login(db: Database, username: str, password: str) -> dict: 
+        if not validar_username(username) or not validar_password(password): 
+            return {"success": False, "message": "Credenciales con formato inválido."} 
+        resultado = db.query( sql="SELECT id, username, password FROM USERS WHERE username = :username", parameters={"username": username} ) 
+        if not resultado: 
+            return {"success": False, "message": "No hay coincidencias"} 
+        hashed_hex = resultado[0][2] 
+        try: 
+            hashed_password = bytes.fromhex(hashed_hex) 
+        except ValueError: 
+            return {"success": False, "message": "Formato de hash inválido en base de datos."} 
+        if bcrypt.checkpw(password.encode("UTF-8"), hashed_password): 
+            return {"success": True, "message": "Logeado correctamente"} 
+        else: 
+            return {"success": False, "message": "Contraseña incorrecta"}
 
 
 class Finance:

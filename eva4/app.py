@@ -16,11 +16,11 @@ class Aplicacion:
 
         # Inicializar base de datos y API
         self.db = Database(
-            usuario=os.getenv("ORACLE_USER"),
-            contrasena=os.getenv("ORACLE_PASSWORD"),
+            username=os.getenv("ORACLE_USER"),
+            password=os.getenv("ORACLE_PASSWORD"),
             dsn=os.getenv("ORACLE_DSN")
         )
-        self.db.crear_tablas()
+        self.db.create_all_tables()
         self.finanzas = Finance()
         self.usuario_logeado = None
 
@@ -46,18 +46,18 @@ class Aplicacion:
         self.pagina.controls.clear()
         self.input_usuario = ft.TextField(label="Usuario")
         self.input_contrasena = ft.TextField(label="Contraseña", password=True, can_reveal_password=True)
-        self.boton_registrar = ft.Button(text="Registrar", on_click=self.registrar)
+        self.boton_registrar = ft.ElevatedButton("Registrar", on_click=self.registrar)
         self.texto_estado = ft.Text(value="")
-        self.boton_login = ft.Button(text="Ya tengo cuenta", on_click=lambda e: self.pantalla_login())
+        self.boton_login = ft.ElevatedButton("Ya tengo cuenta", on_click=lambda e: self.pantalla_login())
         self.pagina.add(self.input_usuario, self.input_contrasena, self.boton_registrar, self.texto_estado, self.boton_login)
         self.pagina.update()
 
     def registrar(self, e):
         usuario = (self.input_usuario.value or "").strip()
         contrasena = (self.input_contrasena.value or "").strip()
-        estado = Auth.registrar(self.db, usuario, contrasena)
+        estado = Auth.register(self.db, usuario, contrasena)
         self.texto_estado.value = estado["message"]
-        self.texto_estado.color = ft.colors.GREEN_600 if estado["success"] else ft.colors.RED_400
+        self.texto_estado.color = ft.Colors.GREEN_600 if estado["success"] else ft.Colors.RED_400
         self.pagina.update()
         if estado["success"]:
             self.pantalla_login()
@@ -69,7 +69,7 @@ class Aplicacion:
         self.pagina.controls.clear()
         self.input_usuario = ft.TextField(label="Usuario")
         self.input_contrasena = ft.TextField(label="Contraseña", password=True, can_reveal_password=True)
-        self.boton_login = ft.Button(text="Iniciar sesión", on_click=self.login)
+        self.boton_login = ft.Button("Iniciar sesión", on_click=self.login)
         self.texto_estado = ft.Text(value="")
         self.pagina.add(self.input_usuario, self.input_contrasena, self.boton_login, self.texto_estado)
         self.pagina.update()
@@ -79,7 +79,7 @@ class Aplicacion:
         contrasena = (self.input_contrasena.value or "").strip()
         estado = Auth.login(self.db, usuario, contrasena)
         self.texto_estado.value = estado["message"]
-        self.texto_estado.color = ft.colors.GREEN_600 if estado["success"] else ft.colors.RED_400
+        self.texto_estado.color = ft.Colors.GREEN_600 if estado["success"] else ft.Colors.RED_400
         self.pagina.update()
         if estado["success"]:
             self.usuario_logeado = usuario
@@ -91,9 +91,9 @@ class Aplicacion:
     def pantalla_menu(self):
         self.pagina.controls.clear()
         self.pagina.add(ft.Text(f"Bienvenido {self.usuario_logeado}", size=20))
-        self.pagina.add(ft.Button(text="Consultar indicador", on_click=lambda e: self.pantalla_indicador()))
-        self.pagina.add(ft.Button(text="Historial", on_click=lambda e: self.pantalla_historial()))
-        self.pagina.add(ft.Button(text="Cerrar sesión", on_click=lambda e: self.pantalla_login()))
+        self.pagina.add(ft.Button(content="Consultar indicador", on_click=lambda e: self.pantalla_indicador()))
+        self.pagina.add(ft.Button(content="Historial", on_click=lambda e: self.pantalla_historial()))
+        self.pagina.add(ft.Button(content="Cerrar sesión", on_click=lambda e: self.pantalla_login()))
         self.pagina.update()
 
     # -------------------------
@@ -114,12 +114,12 @@ class Aplicacion:
             width=300
         )
         self.input_fecha = ft.TextField(label="Fecha", read_only=True, width=200)
-        self.boton_fecha = ft.Button(text="Elegir fecha", on_click=lambda e: self.date_picker.pick_date())
-        self.boton_consultar = ft.Button(text="Consultar", on_click=self.consultar_indicador)
-        self.boton_guardar = ft.Button(text="Guardar consulta", on_click=self.guardar_indicador, disabled=True)
-        self.texto_estado_indicador = ft.Text(value="", color=ft.colors.RED_400)
+        self.boton_fecha = ft.Button(content="Elegir fecha", on_click=lambda e: self.date_picker.pick_date())
+        self.boton_consultar = ft.Button(content="Consultar", on_click=self.consultar_indicador)
+        self.boton_guardar = ft.Button(content="Guardar consulta", on_click=self.guardar_indicador, disabled=True)
+        self.texto_estado_indicador = ft.Text(value="", color=ft.Colors.RED_400)
         self.texto_resultado = ft.Text(value="", selectable=True)
-        self.pagina.add(self.dropdown_indicador, ft.Row([self.input_fecha, self.boton_fecha]), ft.Row([self.boton_consultar, self.boton_guardar]), self.texto_estado_indicador, self.texto_resultado, ft.Button(text="Volver", on_click=lambda e: self.pantalla_menu()))
+        self.pagina.add(self.dropdown_indicador, ft.Row([self.input_fecha, self.boton_fecha]), ft.Row([self.boton_consultar, self.boton_guardar]), self.texto_estado_indicador, self.texto_resultado, ft.Button(content="Volver", on_click=lambda e: self.pantalla_menu()))
         self.pagina.update()
 
     def _on_fecha_seleccionada(self, e):
@@ -133,12 +133,12 @@ class Aplicacion:
         datos = self.finanzas.obtener_indicador(indicador, fecha)
         if not datos.get("success"):
             self.texto_estado_indicador.value = datos.get("message", "Error")
-            self.texto_estado_indicador.color = ft.colors.RED_400
+            self.texto_estado_indicador.color = ft.Colors.RED_400
             self.texto_resultado.value = ""
             self.boton_guardar.disabled = True
         else:
             self.texto_estado_indicador.value = "Consulta realizada"
-            self.texto_estado_indicador.color = ft.colors.GREEN_600
+            self.texto_estado_indicador.color = ft.Colors.GREEN_600
             self.texto_resultado.value = f"{indicador.upper()} {fecha}: {datos['valor']} (Fuente: {datos['fuente']})"
             self._ultimo_resultado = datos
             self._ultimo_indicador = indicador
@@ -149,7 +149,7 @@ class Aplicacion:
         if self._ultimo_resultado:
             self.finanzas.guardar_consulta(self.db, self.usuario_logeado, self._ultimo_indicador, self._ultimo_resultado)
             self.texto_estado_indicador.value = "Consulta guardada"
-            self.texto_estado_indicador.color = ft.colors.GREEN_600
+            self.texto_estado_indicador.color = ft.Colors.GREEN_600
             self.pagina.update()
 
     # -------------------------
@@ -168,11 +168,11 @@ class Aplicacion:
             rows=[]
         )
         self.recargar_historial()
-        self.pagina.add(ft.Text("Historial de consultas", size=20, weight=ft.FontWeight.BOLD), self.tabla, ft.Button(text="Volver", on_click=lambda e: self.pantalla_menu()))
+        self.pagina.add(ft.Text("Historial de consultas", size=20, weight=ft.FontWeight.BOLD), self.tabla, ft.Button(content="Volver", on_click=lambda e: self.pantalla_menu()))
         self.pagina.update()
 
     def recargar_historial(self):
-        filas = self.db.ejecutar("SELECT indicador, fecha_indicador, valor, fecha_consulta, fuente FROM historial_consultas WHERE usuario=:usr", {"usr": self.usuario_logeado}) or []
+        filas = self.db.query("SELECT indicador, fecha_indicador, valor, fecha_consulta, fuente FROM historial_consultas WHERE usuario=:usr", {"usr": self.usuario_logeado}) or []
         self.tabla.rows = [
             ft.DataRow(cells=[
                 ft.DataCell(ft.Text(str(f[0]))),
